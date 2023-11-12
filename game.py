@@ -36,12 +36,21 @@
 
 import pygame
 import numpy as np
+import pickle
 
+instructions_text = [
+    "Witaj w symulacji Gry w życie!",
+    "Instrukcje:",
+    "- Kliknij przycisk 'Next Generation', aby przejść do następnej generacji.",
+    "- Naciśnij spację, aby zatrzymać lub wznowić symulację.",
+    "- Naciśnij 's', aby zapisać stan gry.",
+    "- Naciśnij 'l', aby wczytać zapisany stan gry.",
+]
 # Initialize Pygame
 pygame.init()
 
 # Screen dimensions
-width, height = 800, 600
+width, height = 900, 600
 screen = pygame.display.set_mode((width, height))
 
 # Grid dimensions
@@ -62,6 +71,19 @@ green = (0, 255, 0)
 button_width, button_height = 200, 50
 button_x, button_y = (width - button_width) // 2, height - button_height - 10
 
+
+# Simulation control variables
+paused = False
+# Adjust the speed of the simulation
+simulation_speed = 10
+
+def show_instructions():
+    font = pygame.font.Font(None, 36)
+    line_height = 40
+    for i, line in enumerate(instructions_text):
+        text = font.render(line, True, black)
+        text_rect = text.get_rect(center=(width // 2, height // 2 + i * line_height))
+        screen.blit(text, text_rect)
 def draw_button():
     pygame.draw.rect(screen, green, (button_x, button_y, button_width, button_height))
     font = pygame.font.Font(None, 36)
@@ -103,14 +125,33 @@ def draw_cells():
             cell = pygame.Rect(x * cell_width, y * cell_height, cell_width, cell_height)
             if game_state[x, y] == 1:
                 pygame.draw.rect(screen, black, cell)
+def save_game_state(filename):
+    with open(filename, 'wb') as file:
+        pickle.dump(game_state, file)
+
+def load_game_state(filename):
+    global game_state
+    with open(filename, 'rb') as file:
+        game_state = pickle.load(file)
 
 running = True
+showing_instructions = True
+clock = pygame.time.Clock()
+
 while running:
     screen.fill(white)
-    draw_grid()
-    draw_cells()
-    draw_button()
-    pygame.display.flip()
+
+    if showing_instructions:
+        show_instructions()
+        pygame.display.flip()
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                showing_instructions = False
+    else:
+        draw_grid()
+        draw_cells()
+        draw_button()
+        pygame.display.flip()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -121,6 +162,18 @@ while running:
             else:
                 x, y = event.pos[0] // cell_width, event.pos[1] // cell_height
                 game_state[x, y] = not game_state[x, y]
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                paused = not paused
+            elif event.key == pygame.K_s:
+                save_game_state('saved_game_state.pkl')
+            elif event.key == pygame.K_l:
+                load_game_state('saved_game_state.pkl')
+
+    if not paused:
+        next_generation()
+
+    clock.tick(simulation_speed)
 
 pygame.quit()
 
