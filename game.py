@@ -41,8 +41,20 @@ import numpy as np
 import pickle
 
 class GameOfLife:
+
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(GameOfLife, cls).__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
     def __init__(self, width, height, n_cells_x, n_cells_y, initial_probability=0.2, tick_interval=1.0):
+        if self._initialized:
+            return
         pygame.init()
+        self._initialized = True
         self.width, self.height = width, height
         self.screen = pygame.display.set_mode((width, height))
         self.n_cells_x, self.n_cells_y = n_cells_x, n_cells_y
@@ -272,5 +284,7 @@ if __name__ == "__main__":
     n_cells_x, n_cells_y = 40, 30
     tick_interval = 0.8
 
-    game = GameOfLife(width, height, n_cells_x, n_cells_y, tick_interval=tick_interval)
-    game.run_simulation()
+    game0 = GameOfLife(width, height, n_cells_x, n_cells_y, tick_interval=tick_interval)
+
+    game0.run_simulation()
+
